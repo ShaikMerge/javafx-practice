@@ -1,78 +1,122 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+import org.gradle.api.JavaVersion.VERSION_17
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
 
-  <groupId>com.org.fx</groupId>
-  <artifactId>HelloFx</artifactId>
-  <version>1.0-SNAPSHOT</version>
-  <name>HelloFx</name>
+plugins {
+    java
+    jacoco
+    `maven-publish`
+    id("org.sonarqube") version "3.0"
+    //for CRLF. Tasks -> other -> editconfigCheck, editconfigFormat
+    id("org.ec4j.editorconfig") version "0.1.0"
+    //this plugin provides a task to determine which dependencies have updates
+    // Tasks -> help -> dependencyUpdates
+    id("com.github.ben-manes.versions") version "0.42.0"
+    id("org.springframework.boot") version "3.2.4"
+    id("io.spring.dependency-management") version "1.1.4"
+    id("org.owasp.dependencycheck") version "7.1.1"
+}
 
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-<junit.version>5.10.0</junit.version>  </properties>
+buildscript {
+    dependencies {
+        classpath("org.owasp:dependency-check-gradle:7.1.1")
+    }
+}
 
-  <dependencies>
-    <dependency>
-      <groupId>org.openjfx</groupId>
-      <artifactId>javafx-controls</artifactId>
-      <version>21</version>
-    </dependency>
-    <dependency>
-      <groupId>org.openjfx</groupId>
-      <artifactId>javafx-fxml</artifactId>
-      <version>21</version>
-    </dependency>
-<dependency>
-      <groupId>org.kordamp.bootstrapfx</groupId>
-      <artifactId>bootstrapfx-core</artifactId>
-      <version>0.4.0</version>
-    </dependency>
-<dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-api</artifactId>
-      <version>${junit.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-engine</artifactId>
-      <version>${junit.version}</version>
-      <scope>test</scope>
-    </dependency>  </dependencies>
+group = "com.epam"
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.11.0</version>
-        <configuration>
-          <source>21</source>
-          <target>21</target>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.openjfx</groupId>
-        <artifactId>javafx-maven-plugin</artifactId>
-        <version>0.0.8</version>
-        <executions>
-          <execution>
-            <!-- Default configuration for running with: mvn clean javafx:run -->
-            <id>default-cli</id>
-            <configuration>
-              <mainClass>com.org.fx.hellofx/com.org.fx.hellofx.HelloApplication</mainClass>
-              <launcher>app</launcher>
-              <jlinkZipName>app</jlinkZipName>
-              <jlinkImageName>app</jlinkImageName>
-              <noManPages>true</noManPages>
-              <stripDebug>true</stripDebug>
-              <noHeaderFiles>true</noHeaderFiles>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
-</project>
+java {
+    sourceCompatibility = VERSION_17
+    targetCompatibility = VERSION_17
+}
+
+springBoot {
+    buildInfo {
+        properties {
+     //       time = null
+        }
+    }
+}
+
+editorconfig {
+    excludes = listOf("**/out/**", "**/generated/**")
+}
+
+repositories {
+    mavenCentral()
+}
+
+
+
+dependencyManagement {
+    imports {
+        mavenBom("org.springframework.cloud:spring-cloud-dependencies:2023.0.3")
+        //missing dependencies:2021.0.0
+        mavenBom("org.springframework.cloud:spring-cloud-security-dependencies:2.2.5.RELEASE")
+        mavenBom("io.awspring.cloud:spring-cloud-aws-dependencies:3.1.0")
+        mavenBom("software.amazon.awssdk:bom:2.21.12")
+    }
+}
+
+
+dependencies {
+    implementation("io.micrometer:micrometer-tracing-bridge-brave")
+    implementation("io.zipkin.reporter2:zipkin-reporter-brave")
+    implementation("org.hibernate:hibernate-validator:7.0.5.Final")
+    implementation("io.awspring.cloud:spring-cloud-aws-autoconfigure")
+
+    implementation("org.springframework.cloud:spring-cloud-starter-bootstrap")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+   // implementation("javax.validation:validation-api:2.0.1.Final")
+    implementation("jakarta.validation:jakarta.validation-api:3.0.0")
+
+    implementation("org.springframework.cloud:spring-cloud-security")
+    implementation("io.awspring.cloud:spring-cloud-aws-starter-secrets-manager")
+
+
+    implementation("org.springframework.security.oauth.boot:spring-security-oauth2-autoconfigure:2.6.8")
+    implementation("io.awspring.cloud:spring-cloud-aws-messaging:2.4.4")
+    implementation("io.awspring.cloud:spring-cloud-aws-starter-sqs")
+
+
+
+    implementation("org.apache.commons:commons-lang3:3.13.0")
+    implementation("one.util:streamex:0.8.1")
+  //  implementation("com.amazonaws:aws-java-sdk-lambda:1.12.780")
+    // https://mvnrepository.com/artifact/software.amazon.awssdk/lambda
+    implementation("software.amazon.awssdk:lambda")
+
+
+
+    implementation("org.springframework.security:spring-security-oauth2-resource-server")
+    implementation("org.springframework.security:spring-security-oauth2-jose")
+
+    implementation("com.google.guava:guava:32.0.0-jre")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0")
+
+    val mapstructVersion = "1.5.5.Final"
+    compileOnly("org.mapstruct:mapstruct:${mapstructVersion}")
+
+    compileOnly("org.projectlombok:lombok")
+    annotationProcessor("org.projectlombok:lombok")
+    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+    annotationProcessor("org.mapstruct:mapstruct-processor:${mapstructVersion}")
+
+    testImplementation("junit:junit")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.security:spring-security-test")
+    testImplementation("org.springframework.cloud:spring-cloud-contract-wiremock")
+    testImplementation("org.junit.jupiter:junit-jupiter-params")
+    testImplementation("org.mapstruct:mapstruct:${mapstructVersion}")
+    testCompileOnly("org.projectlombok:lombok")
+    testAnnotationProcessor("org.projectlombok:lombok")
+    testImplementation("com.tngtech.jgiven:jgiven-spring-junit5:1.2.5")
+    testImplementation("io.rest-assured:rest-assured:5.3.2")
+    testImplementation("io.rest-assured:json-path:5.3.2")
+    testImplementation("io.rest-assured:xml-path:5.3.2")
+   // testImplementation("com.github.tomakehurst:wiremock:2.27.2")
+  //  testImplementation("org.wiremock:wiremock-standalone:3.3.1")
+    testImplementation("org.springframework.cloud:spring-cloud-contract-wiremock:4.0.3")
+    testImplementation("org.testcontainers:testcontainers:1.19.7")
+    testImplementation("org.testcontainers:junit-jupiter:1.19.7")
+}
